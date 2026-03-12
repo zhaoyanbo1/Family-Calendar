@@ -5,6 +5,7 @@ import '../widgets/event_card.dart';
 import 'notifications_screen.dart';
 import 'family_screen.dart';
 import 'chat_screen.dart';
+import 'settings_screen.dart';
 
 class CalendarScreen extends StatelessWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -321,7 +322,12 @@ class CalendarScreen extends StatelessWidget {
             ),
             child: _navItem(Icons.chat_bubble_outline, 'Chat'),
           ),
-          _navItem(Icons.settings, 'Settings'),
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            ),
+            child: _navItem(Icons.settings, 'Settings'),
+          ),
         ],
       ),
     );
