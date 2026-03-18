@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../assets/figma_assets.dart';
+import 'family_selection_screen.dart';
 import 'select_members_screen.dart';
 
 class AddTaskScreen extends StatefulWidget {
@@ -385,19 +386,12 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               ),
             ),
             TextButton(
-              onPressed: () async {
-                final updated = await Navigator.of(context).push<List<String>>(
+              onPressed: () {
+                Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => SelectMembersScreen(
-                      initialSelectedNames: _selectedMembers,
-                    ),
+                    builder: (_) => const FamilySelectionScreen(),
                   ),
                 );
-                if (updated != null) {
-                  setState(() {
-                    _selectedMembers = updated;
-                  });
-                }
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,

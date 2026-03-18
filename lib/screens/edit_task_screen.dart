@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../assets/figma_assets.dart';
 import '../models/task.dart';
+import 'family_selection_screen.dart';
 import 'select_members_screen.dart';
 
 class EditTaskScreen extends StatefulWidget {
@@ -460,19 +461,12 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
               ),
             ),
             TextButton(
-              onPressed: () async {
-                final updated = await Navigator.of(context).push<List<String>>(
+              onPressed: () {
+                Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => SelectMembersScreen(
-                      initialSelectedNames: _task.participants,
-                    ),
+                    builder: (_) => const FamilySelectionScreen(),
                   ),
                 );
-                if (updated != null) {
-                  setState(() {
-                    _task = _task.copyWith(participants: updated);
-                  });
-                }
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
