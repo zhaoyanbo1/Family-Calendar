@@ -451,6 +451,7 @@ import 'package:flutter/material.dart';
 
 import 'calendar_screen.dart';
 import 'register_screen.dart';
+import 'memo_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -553,7 +554,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const CalendarScreen(),
+          builder: (_) => const MemoScreen(),
         ),
       );
     } on FirebaseAuthException catch (e) {
