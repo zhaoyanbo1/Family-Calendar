@@ -1,0 +1,92 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+
+import '../themes/app_theme.dart';
+
+/// 底部导航栏组件
+/// 统一的4个导航项：Memo, Family, Today, Settings
+class AppBottomNavigationBar extends StatelessWidget {
+  final int currentIndex;
+  final ValueChanged<int> onItemTapped;
+
+  const AppBottomNavigationBar({
+    Key? key,
+    required this.currentIndex,
+    required this.onItemTapped,
+  }) : super(key: key);
+
+  static const List<_NavItem> _navItems = [
+    _NavItem(icon: Icons.chat_bubble_outline, label: 'Memo'),
+    _NavItem(icon: Icons.people, label: 'Family'),
+    _NavItem(icon: Icons.calendar_today, label: 'Today'),
+    _NavItem(icon: Icons.settings, label: 'Settings'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: AppTheme.blurSigma,
+          sigmaY: AppTheme.blurSigma,
+        ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 25,
+            vertical: AppTheme.verticalPadding,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            border: const Border(
+              top: BorderSide(color: AppTheme.divider),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(
+              _navItems.length,
+              (index) => _buildNavItem(index),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index) {
+    final item = _navItems[index];
+    final isSelected = index == currentIndex;
+
+    return GestureDetector(
+      onTap: () => onItemTapped(index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            item.icon,
+            size: 20,
+            color: isSelected ? AppTheme.accent : AppTheme.inactiveIcon,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            item.label,
+            style: isSelected
+                ? AppTheme.navLabelSelectedStyle
+                : AppTheme.navLabelStyle,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavItem {
+  final IconData icon;
+  final String label;
+
+  const _NavItem({
+    required this.icon,
+    required this.label,
+  });
+}

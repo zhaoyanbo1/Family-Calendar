@@ -1,5 +1,5 @@
 class Task {
-  final String? id;
+  final String id;
   final String title;
   final String category;
   final DateTime date;
@@ -10,38 +10,38 @@ class Task {
   final bool reminderEnabled;
 
   Task({
-    this.id,
-    required this.title,
-    required this.category,
-    required this.date,
-    required this.startTime,
-    required this.endTime,
-    required this.notes,
-    required this.participants,
-    required this.reminderEnabled,
+  required this.id,
+  required this.title,
+  required this.category,
+  required this.date,
+  required this.startTime,
+  required this.endTime,
+  required this.notes,
+  required this.participants,
+  required this.reminderEnabled,
   });
 
   Task copyWith({
-    String? id,
-    String? title,
-    String? category,
-    DateTime? date,
-    DateTime? startTime,
-    DateTime? endTime,
-    String? notes,
-    List<String>? participants,
-    bool? reminderEnabled,
+  String? id,
+  String? title,
+  String? category,
+  DateTime? date,
+  DateTime? startTime,
+  DateTime? endTime,
+  String? notes,
+  List<String>? participants,
+  bool? reminderEnabled,
   }) {
-    return Task(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      category: category ?? this.category,
-      date: date ?? this.date,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
-      notes: notes ?? this.notes,
-      participants: participants ?? this.participants,
-      reminderEnabled: reminderEnabled ?? this.reminderEnabled,
-    );
+  return Task(
+  id: id ?? this.id,
+  title: title ?? this.title,
+  category: category ?? this.category,
+  date: date ?? this.date,
+  startTime: startTime ?? this.startTime,
+  endTime: endTime ?? this.endTime,
+  notes: notes ?? this.notes,
+  participants: participants ?? this.participants,
+  reminderEnabled: reminderEnabled ?? this.reminderEnabled,
+  );
   }
-}
+  }

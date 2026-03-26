@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../assets/figma_assets.dart';
+import '../themes/app_theme.dart';
 import '../models/task.dart';
 import '../widgets/event_card.dart';
 import 'add_task_screen.dart';
@@ -24,10 +25,10 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  static const bgColor = Color(0xFFFDFBF7);
-  static const primaryColor = Color(0xFF0F172A);
-  static const accentColor = Color(0xFFE2B736);
-  static const secondaryAccent = Color(0xFFFDE047);
+  static const bgColor = AppTheme.background;
+  static const primaryColor = AppTheme.headline;
+  static const accentColor = AppTheme.accent;
+  static const secondaryAccent = AppTheme.secondaryAccent;
 
   static const _hourRowHeight = 92.0;
   static const _leftTimeWidth = 60.0;
