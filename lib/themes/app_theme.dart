@@ -49,6 +49,20 @@ class AppTheme {
     color: Colors.black87,
   );
 
+  static const Color familyMemberCountColor = Color(0xFFE2B736);
+
+  static const TextStyle familyNameStyle = TextStyle(
+    fontSize: 26,
+    fontWeight: FontWeight.w900,
+    color: headline,
+  );
+
+  static const TextStyle familyMemberCountStyle = TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: familyMemberCountColor,
+  );
+
   static const TextStyle navLabelStyle = TextStyle(
     fontSize: 10,
     fontWeight: FontWeight.w600,

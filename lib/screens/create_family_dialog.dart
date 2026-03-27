@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../themes/app_theme.dart';
+
 class CreateFamilyDialog extends StatefulWidget {
   const CreateFamilyDialog({Key? key}) : super(key: key);
 
@@ -19,183 +21,139 @@ class _CreateFamilyDialogState extends State<CreateFamilyDialog> {
     super.dispose();
   }
 
-  Future<Map<String, dynamic>?> _findUserByUid(String uid) async {
-    final firestore = FirebaseFirestore.instance;
-
-    // 方案1：users 文档 id 就是 uid
-    final directDoc = await firestore.collection('users').doc(uid).get();
-    if (directDoc.exists) {
-      return directDoc.data();
-    }
-
-    // 方案2：users 文档里有 uid 字段
-    final query = await firestore
-        .collection('users')
-        .where('uid', isEqualTo: uid)
-        .limit(1)
-        .get();
-
-    if (query.docs.isNotEmpty) {
-      return query.docs.first.data();
-    }
-
-    return null;
-  }
-
   Future<void> _createFamily() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-
-    if (currentUser == null) {
-      throw Exception('Current user is null. Please login first.');
-    }
-
     final familyName = _nameController.text.trim();
 
     if (familyName.isEmpty) {
-      throw Exception('Please enter family name');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a family name')),
+      );
+      return;
     }
 
-    final firestore = FirebaseFirestore.instance;
-    final uid = currentUser.uid;
-    final now = Timestamp.now();
-
-    final userData = await _findUserByUid(uid);
-
-    final nickname = (
-        userData?['nickname'] ??
-            userData?['fullName'] ??
-            userData?['name'] ??
-            userData?['displayName'] ??
-            currentUser.displayName ??
-            'Unknown User'
-    ).toString();
-
-    final userPhotoUrl = (
-        userData?['photoURL'] ??
-            userData?['photoUrl'] ??
-            userData?['avatar'] ??
-            currentUser.photoURL ??
-            ''
-    ).toString().trim();
-
-    // families/{familyId}
-    final familyRef = firestore.collection('families').doc();
-    final familyId = familyRef.id;
-
-    // families/{familyId}/members/{uid}
-    final memberRef = familyRef.collection('members').doc(uid);
-
-    // users/{uid}/families/{familyId}
-    final userFamilyRef = firestore
-        .collection('users')
-        .doc(uid)
-        .collection('families')
-        .doc(familyId);
-
-    final batch = firestore.batch();
-
-    batch.set(familyRef, {
-      'familyId': familyId,
-      'familyName': familyName,
-      'description': '',
-      'createdBy': uid,
-      'createdAt': now,
-      'updatedAt': now,
-      'isArchived': false,
-      'photoURL': '',
+    setState(() {
+      _isLoading = true;
     });
-
-    batch.set(memberRef, {
-      'uid': uid,
-      'nickname': nickname,
-      'role': 'owner',
-      'familyRole': 'owner',
-      'status': 'active',
-      'joinedAt': now,
-    });
-
-    batch.set(userFamilyRef, {
-      'familyId': familyId,
-      'familyName': familyName,
-      'joinedAt': now,
-      'role': 'owner',
-      'photoURL': userPhotoUrl,
-    });
-
-    await batch.commit();
-  }
-
-  Future<void> _handleCreate() async {
-    if (_isLoading) return;
 
     try {
-      setState(() {
-        _isLoading = true;
+      final firestore = FirebaseFirestore.instance;
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final now = Timestamp.now();
+
+      // Create family document
+      final familyRef = await firestore.collection('families').add({
+        'familyName': familyName,
+        'ownerId': currentUser.uid,
+        'createdAt': now,
+        'photoURL': '',
       });
 
-      await _createFamily();
+      // Add current user as owner to family members
+      await familyRef.collection('members').doc(currentUser.uid).set({
+        'uid': currentUser.uid,
+        'nickname': currentUser.displayName ?? currentUser.email ?? 'You',
+        'role': 'owner',
+        'familyRole': 'owner',
+        'status': 'active',
+        'joinedAt': now,
+      });
+
+      // Add family reference to current user's profile
+      await firestore
+          .collection('users')
+          .doc(currentUser.uid)
+          .collection('families')
+          .doc(familyRef.id)
+          .set({
+        'familyId': familyRef.id,
+        'familyName': familyName,
+        'joinedAt': now,
+        'photoURL': '',
+        'role': 'owner',
+      });
 
       if (!mounted) return;
-      Navigator.of(context).pop(true);
-
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Family created successfully'),
-        ),
+        SnackBar(content: Text('Family "$familyName" created successfully')),
       );
+      Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-
-      setState(() {
-        _isLoading = false;
-      });
-
+      print('Create family error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
+            'Failed to create family: ${e.toString()}',
           ),
+          duration: const Duration(seconds: 3),
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black.withOpacity(0.3),
+      backgroundColor: Colors.transparent,
       body: GestureDetector(
-        onTap: _isLoading ? null : () => Navigator.of(context).pop(),
-        child: Center(
-          child: GestureDetector(
-            onTap: () {},
-            child: Container(
-              width: 340,
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+        onTap: () => Navigator.of(context).pop(),
+        child: Stack(
+          children: [
+            Container(color: Colors.black.withOpacity(0.32)),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: GestureDetector(
+                onTap: () {
+                  // Prevent click from propagating to outer GestureDetector
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 380,
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.14),
+                        blurRadius: 16,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
                         'Create a family',
                         style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
                           color: Color(0xFF0F172A),
                         ),
                       ),
                       InkWell(
                         borderRadius: BorderRadius.circular(999),
-                        onTap: _isLoading
-                            ? null
-                            : () => Navigator.of(context).pop(),
+                        onTap: () => Navigator.of(context).pop(),
                         child: Container(
                           width: 36,
                           height: 36,
@@ -232,7 +190,6 @@ class _CreateFamilyDialogState extends State<CreateFamilyDialog> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: TextField(
                       controller: _nameController,
-                      enabled: !_isLoading,
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintText: 'e.g. Johnson Family',
@@ -245,44 +202,58 @@ class _CreateFamilyDialogState extends State<CreateFamilyDialog> {
                   ),
                   const SizedBox(height: 24),
                   GestureDetector(
-                    onTap: _isLoading ? null : _handleCreate,
-                    child: Container(
-                      width: double.infinity,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [Color(0xFFFAC638), Color(0xFFF59E0B)],
+                    onTap: _isLoading ? null : _createFamily,
+                    child: Opacity(
+                      opacity: _isLoading ? 0.6 : 1.0,
+                      child: Container(
+                        width: double.infinity,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [Color(0xFFFAC638), Color(0xFFF59E0B)],
+                          ),
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFAC638).withOpacity(0.2),
+                              blurRadius: 15,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFAC638).withOpacity(0.2),
-                            blurRadius: 15,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: _isLoading
-                            ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: Colors.white,
-                          ),
-                        )
-                            : const Text(
-                          'Create',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
+                        child: Center(
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.black87,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Create',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black87,
+                                  ),
+                                ),
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Invitation will be sent directly using your account email (not via external link).',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF94A3B8),
                     ),
                   ),
                 ],
@@ -290,7 +261,8 @@ class _CreateFamilyDialogState extends State<CreateFamilyDialog> {
             ),
           ),
         ),
-      ),
+      ])),
     );
+
   }
 }
