@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 
+import '../themes/app_theme.dart';
 import '../assets/figma_assets.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -9,57 +9,56 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context),
-      body: _buildBody(context),
-      backgroundColor: const Color(0xFFFDFBF7),
+      backgroundColor: AppTheme.pageBackground,
+      body: SafeArea(
+        child: Column(
+          children: [
+            _buildAppBar(context),
+            Expanded(
+              child: _buildBody(context),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(80),
-      child: Material(
-        color: const Color(0xFFFDFBF7).withOpacity(0.8),
-        child: SafeArea(
-          child: Container(
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.black.withOpacity(0.04)),
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(
-                    Icons.arrow_back,
-                    size: 24,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Notifications',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Settings clicked')),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.settings,
-                    size: 24,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
+  Widget _buildAppBar(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      decoration: BoxDecoration(
+        color: AppTheme.headerBackground,
+        boxShadow: const [
+          AppTheme.headerShadow,
+        ],
+      ),
+      child: Row(
+        children: [
+          AppTheme.backButton(
+            context,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Text(
+              'Notifications',
+              textAlign: TextAlign.center,
+              style: AppTheme.headlineStyle,
             ),
           ),
-        ),
+          IconButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Settings clicked')),
+              );
+            },
+            icon: const Icon(
+              Icons.settings,
+              size: 24,
+              color: Colors.black87,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -133,12 +132,12 @@ class NotificationsScreen extends StatelessWidget {
       subtitle: 'Sunday Roast moved to 7:00 PM',
       action: TextButton(
         onPressed: () {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('View clicked')),
-      );
-    },
-    child: const Text('View'),
-    ),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('View clicked')),
+          );
+        },
+        child: const Text('View'),
+      ),
     );
   }
 
@@ -161,13 +160,13 @@ class NotificationsScreen extends StatelessWidget {
   }
 
   Widget _notificationCard(
-    BuildContext context, {
-    required IconData icon,
-    required Color iconBackground,
-    required String title,
-    required String subtitle,
-    required Widget action,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required Color iconBackground,
+        required String title,
+        required String subtitle,
+        required Widget action,
+      }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Container(
@@ -175,7 +174,10 @@ class NotificationsScreen extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+            ),
           ],
         ),
         child: ListTile(
@@ -187,12 +189,14 @@ class NotificationsScreen extends StatelessWidget {
             ),
             child: Icon(icon, size: 24, color: Colors.white),
           ),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           subtitle: Text(subtitle),
           trailing: action,
         ),
       ),
     );
   }
-
 }

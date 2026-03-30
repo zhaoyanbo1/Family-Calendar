@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../assets/figma_assets.dart';
+import '../themes/app_theme.dart';
 import 'family_selection_screen.dart';
 import 'select_members_screen.dart';
 
@@ -31,7 +32,7 @@ class AddTaskScreen extends StatefulWidget {
 }
 
 class _AddTaskScreenState extends State<AddTaskScreen> {
-  static const _background = Color(0xFFFDFBF7);
+  static const _background = AppTheme.pageBackground;
   static const _card = Color(0xFFFAF6EB);
   static const _labelColor = Color(0xFFB08F4C);
   static const _primaryColor = Color(0xFF0F172A);
@@ -336,7 +337,8 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     });
 
     try {
-      final familyId = _selectedFamilyId ?? await _loadCurrentFamilyId(user.uid) ?? user.uid;
+      final familyId =
+          _selectedFamilyId ?? await _loadCurrentFamilyId(user.uid) ?? user.uid;
       final participantIds = _buildParticipantIds(user.uid);
       final startTime = _buildStartDateTime();
       final endTime = startTime.add(const Duration(hours: 1));
@@ -412,9 +414,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: _background,
       body: Container(
-        color: const Color(0xFFF1F5F9),
+        color: _background,
         child: SafeArea(
           child: Stack(
             children: [
@@ -422,6 +424,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                 child: Container(
                   width: 430,
                   constraints: const BoxConstraints(maxWidth: 430),
+                  color: _background,
                   child: Column(
                     children: [
                       _buildHeader(context),
@@ -463,43 +466,24 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.headerBackground,
+        boxShadow: [
+          AppTheme.headerShadow,
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 18,
-                  color: _primaryColor,
-                ),
-              ),
-            ),
-          ),
+          AppTheme.backButton(context),
           const Text(
             'Add Task',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: _primaryColor,
+              color: AppTheme.headline,
             ),
           ),
           const SizedBox(width: 40),

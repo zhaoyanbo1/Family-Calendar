@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 
-/// 应用主题配置
-/// 包含颜色、字体样式等统一配置
 class AppTheme {
-  // 颜色常量
+  // Colors
   static const Color background = Color(0xFFFCFBF8);
   static const Color cardBackground = Color(0xFFFFFFFF);
+  static const Color pageBackground = Color(0xFFF8F7F6);
+  static const Color headerBackground = Color(0xFFFFFFFF);
   static const Color headline = Color(0xFF0F172A);
   static const Color accent = Color(0xFFFAC638);
   static const Color secondaryAccent = Color(0xFFFDE047);
-  static const Color accentDark = Color(0xFFF59E0B); // 深一点的强调色
+  static const Color accentDark = Color(0xFFF59E0B);
   static const Color border = Color.fromRGBO(255, 255, 255, 0.2);
   static const Color mutedText = Color(0xFF64748B);
   static const Color inactiveIcon = Color(0xFF94A3B8);
   static const Color divider = Color(0xFFF1F5F9);
   static const Color error = Color(0xFFEF4444);
-  static const Color lightBackground = Color(0xFFF3EEE0); // 浅背景色
+  static const Color lightBackground = Color(0xFFF3EEE0);
+  static const Color familyMemberCountColor = Color(0xFFE2B736);
 
-  // 字体样式
+  // Text styles
   static const TextStyle headlineStyle = TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w800,
@@ -49,8 +50,6 @@ class AppTheme {
     color: Colors.black87,
   );
 
-  static const Color familyMemberCountColor = Color(0xFFE2B736);
-
   static const TextStyle familyNameStyle = TextStyle(
     fontSize: 26,
     fontWeight: FontWeight.w900,
@@ -75,7 +74,7 @@ class AppTheme {
     color: accent,
   );
 
-  // 阴影
+  // Shadows
   static const BoxShadow cardShadow = BoxShadow(
     color: Color.fromRGBO(0, 0, 0, 0.05),
     blurRadius: 2,
@@ -83,21 +82,58 @@ class AppTheme {
   );
 
   static const BoxShadow headerShadow = BoxShadow(
-    color: Color.fromRGBO(0, 0, 0, 0.25),
-    blurRadius: 50,
-    offset: Offset(0, 20),
+    color: Color.fromRGBO(0, 0, 0, 0.05),
+    blurRadius: 10,
+    offset: Offset(0, 1),
   );
 
-  // 边框半径
+  static const BoxShadow backButtonShadow = BoxShadow(
+    color: Color.fromRGBO(0, 0, 0, 0.06),
+    blurRadius: 6,
+    offset: Offset(0, 2),
+  );
+
+  // Radius
   static const double borderRadius = 24.0;
   static const double smallBorderRadius = 16.0;
 
-  // 间距
+  // Spacing
   static const double headerHeight = 77.0;
   static const double bottomNavHeight = 94.0;
   static const double horizontalPadding = 24.0;
   static const double verticalPadding = 17.0;
 
-  // 模糊效果
+  // Blur
   static const double blurSigma = 6.0;
+
+  // Back button
+  static const Color backButtonBackground = Colors.white;
+  static const Color backButtonIconColor = Color(0xFF0F172A);
+  static const double backButtonSize = 40;
+  static const double backButtonIconSize = 18;
+
+  static Widget backButton(BuildContext context, {VoidCallback? onPressed}) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onPressed ?? () => Navigator.of(context).pop(),
+      child: Container(
+        width: backButtonSize,
+        height: backButtonSize,
+        decoration: BoxDecoration(
+          color: backButtonBackground,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: const [
+            backButtonShadow,
+          ],
+        ),
+        child: const Center(
+          child: Icon(
+            Icons.arrow_back_ios_new,
+            size: backButtonIconSize,
+            color: backButtonIconColor,
+          ),
+        ),
+      ),
+    );
+  }
 }

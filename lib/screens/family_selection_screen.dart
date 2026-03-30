@@ -1,9 +1,8 @@
-import 'dart:ui';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../themes/app_theme.dart';
 import 'select_members_screen.dart';
 
 // Remote avatars (expires after ~7 days from Figma export)
@@ -26,12 +25,13 @@ const _avatar8 =
 const _avatar9 =
     'https://www.figma.com/api/mcp/asset/d245a2c3-c270-40af-92fa-7c4ae5594204';
 
-// Color constants
-const _background = Color(0xFFFCFBF8);
 const _headline = Color(0xFF0F172A);
 const _accent = Color(0xFFFAC638);
-const _border = Color.fromRGBO(255, 255, 255, 0.2);
-const _buttonBg = Color(0xFFF3EEE0);
+
+// Updated to match memo_screen-style cleaner card look
+const _cardBackground = Color(0xFFFFFCF6);
+const _cardBorder = Color(0xFFF1E8D8);
+const _subText = Color(0xFF64748B);
 
 class FamilySelectionResult {
   const FamilySelectionResult({
@@ -214,7 +214,8 @@ class _FamilySelectionScreenState extends State<FamilySelectionScreen> {
         continue;
       }
 
-      final familyDoc = await firestore.collection('families').doc(familyId).get();
+      final familyDoc =
+      await firestore.collection('families').doc(familyId).get();
 
       if (!familyDoc.exists) {
         continue;
@@ -349,13 +350,14 @@ class _FamilySelectionScreenState extends State<FamilySelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: AppTheme.pageBackground,
       body: SafeArea(
         child: Center(
           child: Container(
             width: 430,
             constraints: const BoxConstraints(maxWidth: 430),
             height: double.infinity,
+            color: AppTheme.pageBackground,
             child: Stack(
               children: [
                 Positioned.fill(
@@ -380,24 +382,15 @@ class _FamilySelectionScreenState extends State<FamilySelectionScreen> {
     return Container(
       height: 77,
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.headerBackground,
+        boxShadow: [
+          AppTheme.headerShadow,
+        ],
+      ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _buttonBg,
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new,
-                size: 14,
-                color: _headline,
-              ),
-            ),
-          ),
+          AppTheme.backButton(context),
           const Expanded(
             child: Center(
               child: Text(
@@ -422,7 +415,9 @@ class _FamilySelectionScreenState extends State<FamilySelectionScreen> {
       future: _groupsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: _accent));
+          return const Center(
+            child: CircularProgressIndicator(color: _accent),
+          );
         }
 
         if (snapshot.hasError) {
@@ -572,14 +567,17 @@ class _FamilyGroupCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(25),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.4),
-          border: Border.all(color: _border),
+          color: _cardBackground,
+          border: Border.all(
+            color: selected ? _accent.withOpacity(0.45) : _cardBorder,
+            width: 1.2,
+          ),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 2,
-              offset: const Offset(0, 1),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -604,7 +602,7 @@ class _FamilyGroupCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: _accent.withOpacity(0.25),
+                      color: _accent.withOpacity(0.18),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(

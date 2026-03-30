@@ -27,7 +27,7 @@ class FamilyScreen extends StatefulWidget {
 }
 
 class _FamilyScreenState extends State<FamilyScreen> {
-  int _selectedNavIndex = 1; // Family is selected
+  int _selectedNavIndex = 1;
   late Future<List<Map<String, dynamic>>> _membersFuture;
 
   final TextEditingController _inviteEmailController = TextEditingController();
@@ -104,8 +104,8 @@ class _FamilyScreenState extends State<FamilyScreen> {
   }
 
   Future<QueryDocumentSnapshot<Map<String, dynamic>>?> _findUserDocByEmail(
-    String email,
-  ) async {
+      String email,
+      ) async {
     final firestore = FirebaseFirestore.instance;
     final normalizedEmail = email.trim().toLowerCase();
 
@@ -149,7 +149,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
 
       final familyData = familyDoc.data() ?? {};
       final familyName =
-          (familyData['familyName'] ?? widget.familyName).toString();
+      (familyData['familyName'] ?? widget.familyName).toString();
       final familyPhotoURL = (familyData['photoURL'] ?? '').toString();
 
       final invitedUserDoc = await _findUserDocByEmail(inputEmail);
@@ -162,14 +162,14 @@ class _FamilyScreenState extends State<FamilyScreen> {
       final invitedUserData = invitedUserDoc.data();
 
       final nickname = (invitedUserData['fullName'] ??
-              invitedUserData['name'] ??
-              invitedUserData['displayName'] ??
-              invitedUserData['nickname'] ??
-              inputEmail)
+          invitedUserData['name'] ??
+          invitedUserData['displayName'] ??
+          invitedUserData['nickname'] ??
+          inputEmail)
           .toString();
 
       final existingMemberDoc =
-          await familyRef.collection('members').doc(invitedUid).get();
+      await familyRef.collection('members').doc(invitedUid).get();
 
       if (existingMemberDoc.exists) {
         throw Exception('This user is already in the family');
@@ -495,7 +495,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 Text(
                   message,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 15,
                     color: AppTheme.mutedText,
                     height: 1.6,
@@ -533,7 +533,7 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   height: 52,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTheme.lightBackground),
+                      side: const BorderSide(color: AppTheme.lightBackground),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
@@ -575,9 +575,9 @@ class _FamilyScreenState extends State<FamilyScreen> {
       final memberData = doc.data();
 
       final String userId =
-          (memberData['uid'] ?? memberData['userId'] ?? doc.id)
-              .toString()
-              .trim();
+      (memberData['uid'] ?? memberData['userId'] ?? doc.id)
+          .toString()
+          .trim();
 
       if (userId.isEmpty) {
         continue;
@@ -588,22 +588,22 @@ class _FamilyScreenState extends State<FamilyScreen> {
       final String role = (memberData['role'] ?? 'member').toString().trim();
 
       final String fullName = (userData?['fullName'] ??
-              userData?['name'] ??
-              userData?['displayName'] ??
-              memberData['nickname'] ??
-              memberData['fullName'] ??
-              memberData['name'] ??
-              memberData['displayName'] ??
-              'Unknown Member')
+          userData?['name'] ??
+          userData?['displayName'] ??
+          memberData['nickname'] ??
+          memberData['fullName'] ??
+          memberData['name'] ??
+          memberData['displayName'] ??
+          'Unknown Member')
           .toString();
 
       final String photoURL = (userData?['photoURL'] ??
-              userData?['photoUrl'] ??
-              userData?['avatar'] ??
-              memberData['photoURL'] ??
-              memberData['photoUrl'] ??
-              memberData['avatar'] ??
-              '')
+          userData?['photoUrl'] ??
+          userData?['avatar'] ??
+          memberData['photoURL'] ??
+          memberData['photoUrl'] ??
+          memberData['avatar'] ??
+          '')
           .toString()
           .trim();
 
@@ -622,46 +622,38 @@ class _FamilyScreenState extends State<FamilyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppTheme.pageBackground,
       body: SafeArea(
         child: Column(
           children: [
             AppHeader(
               title: widget.familyName.isEmpty ? 'Family Member' : widget.familyName,
-              leading: GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: AppTheme.lightBackground,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.arrow_back, size: 20, color: Colors.black54),
-                  ),
-                ),
-              ),
+              leading: AppTheme.backButton(context),
               useBlur: false,
             ),
             Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refreshMembers,
-                color: AppTheme.accent,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Padding(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildInviteSection(),
-                        const SizedBox(height: 40),
-                        _buildCommunicationSection(context),
-                        const SizedBox(height: 40),
-                        _buildExistingFamilySection(),
-                      ],
+              child: Container(
+                color: AppTheme.pageBackground,
+                child: RefreshIndicator(
+                  onRefresh: _refreshMembers,
+                  color: AppTheme.accent,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 20,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildInviteSection(),
+                          const SizedBox(height: 40),
+                          _buildCommunicationSection(context),
+                          const SizedBox(height: 40),
+                          _buildExistingFamilySection(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -860,11 +852,11 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Expanded(
+                const Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Family Group Chat',
                         style: TextStyle(
                           fontSize: 16,
@@ -872,10 +864,10 @@ class _FamilyScreenState extends State<FamilyScreen> {
                           color: AppTheme.headline,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      SizedBox(height: 2),
                       Text(
                         'Connect with everyone instantly',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
                           color: AppTheme.mutedText,
@@ -1196,20 +1188,19 @@ class _FamilyScreenState extends State<FamilyScreen> {
     });
 
     switch (index) {
-      case 0: // Memo
+      case 0:
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const MemoScreen()),
         );
         break;
-      case 1: // Family
-        // Already on this screen
+      case 1:
         break;
-      case 2: // Today
+      case 2:
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const CalendarScreen()),
         );
         break;
-      case 3: // Settings
+      case 3:
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const SettingsScreen()),
         );

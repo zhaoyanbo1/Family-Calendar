@@ -1,11 +1,12 @@
-import 'dart:ui';
-
 import 'package:calendar/screens/calendar_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../themes/app_theme.dart';
+import '../widgets/app_header.dart';
+import '../widgets/bottom_navigation_bar.dart';
 import 'memo_detail_screen.dart';
 import 'select_family_screen.dart';
 import 'settings_screen.dart';
@@ -18,7 +19,7 @@ class MemoScreen extends StatefulWidget {
 }
 
 class _MemoScreenState extends State<MemoScreen> {
-  static const bgColor = Color(0xFFF8F7F6);
+  static const bgColor = AppTheme.pageBackground;
   static const primaryColor = Color(0xFF0F172A);
   static const accentColor = Color(0xFFE2B736);
   static const secondaryAccent = Color(0xFFFDE047);
@@ -37,10 +38,10 @@ class _MemoScreenState extends State<MemoScreen> {
         .where('userId', isEqualTo: user.uid)
         .snapshots()
         .map((snapshot) {
-          final memos = snapshot.docs.map(MemoRecord.fromFirestore).toList();
-          memos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return memos;
-        });
+      final memos = snapshot.docs.map(MemoRecord.fromFirestore).toList();
+      memos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return memos;
+    });
   }
 
   List<_MemoSection> _buildSections(List<MemoRecord> memos) {
@@ -121,36 +122,58 @@ class _MemoScreenState extends State<MemoScreen> {
             width: 430,
             constraints: const BoxConstraints(maxWidth: 430),
             height: double.infinity,
+            color: bgColor,
             child: Stack(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.25),
-                        blurRadius: 50,
-                        offset: const Offset(0, 20),
-                      ),
-                    ],
-                  ),
-                ),
                 Positioned.fill(
                   child: Column(
                     children: [
                       const SizedBox(height: 74),
                       Expanded(child: _buildContent()),
-                      const SizedBox(height: 94),
+                      const SizedBox(height: 86),
                     ],
                   ),
                 ),
                 Positioned(top: 0, left: 0, right: 0, child: _buildHeader()),
-                Positioned(right: 24, bottom: 112, child: _buildFab()),
+                Positioned(right: 24, bottom: 104, child: _buildFab()),
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: _buildBottomNav(),
+                  child: AppBottomNavigationBar(
+                    currentIndex: _selectedNavIndex,
+                    onItemTapped: (index) {
+                      setState(() {
+                        _selectedNavIndex = index;
+                      });
+
+                      switch (index) {
+                        case 0:
+                          break;
+                        case 1:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SelectFamilyScreen(),
+                            ),
+                          );
+                          break;
+                        case 2:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const CalendarScreen(),
+                            ),
+                          );
+                          break;
+                        case 3:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          );
+                          break;
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
@@ -161,28 +184,9 @@ class _MemoScreenState extends State<MemoScreen> {
   }
 
   Widget _buildHeader() {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF8F8F5).withValues(alpha: 0.8),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
-          ),
-          child: const Center(
-            child: Text(
-              'Memos',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: primaryColor,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ),
-        ),
-      ),
+    return const AppHeader(
+      title: 'Memos',
+      useBlur: false,
     );
   }
 
@@ -284,7 +288,7 @@ class _MemoScreenState extends State<MemoScreen> {
         ),
         const SizedBox(height: 16),
         ...section.items.map(
-          (item) => Padding(
+              (item) => Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: _MemoCard(
               item: item,
@@ -327,7 +331,7 @@ class _MemoScreenState extends State<MemoScreen> {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: accentColor.withValues(alpha: 0.3),
+              color: accentColor.withOpacity(0.3),
               blurRadius: 25,
               offset: const Offset(0, 12),
             ),
@@ -336,100 +340,6 @@ class _MemoScreenState extends State<MemoScreen> {
         child: const Center(
           child: Icon(Icons.edit, size: 28, color: Colors.white),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 17),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.8),
-            border: const Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _bottomNavItem(
-                Icons.chat_bubble_outline,
-                'Memo',
-                0,
-                onTap: () {},
-              ),
-              _bottomNavItem(
-                Icons.people,
-                'Family',
-                1,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const SelectFamilyScreen(),
-                    ),
-                  );
-                },
-              ),
-              _bottomNavItem(
-                Icons.calendar_today,
-                'Today',
-                2,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const CalendarScreen()),
-                  );
-                },
-              ),
-              _bottomNavItem(
-                Icons.settings,
-                'Settings',
-                3,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _bottomNavItem(
-    IconData icon,
-    String label,
-    int index, {
-    VoidCallback? onTap,
-  }) {
-    final selected = index == _selectedNavIndex;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedNavIndex = index;
-        });
-        onTap?.call();
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: selected ? accentColor : const Color(0xFF94A3B8),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              color: selected ? accentColor : const Color(0xFF94A3B8),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -467,8 +377,8 @@ class MemoRecord {
   }
 
   factory MemoRecord.fromFirestore(
-    QueryDocumentSnapshot<Map<String, dynamic>> doc,
-  ) {
+      QueryDocumentSnapshot<Map<String, dynamic>> doc,
+      ) {
     final data = doc.data();
     final timestamp = data['createdAt'];
 
@@ -519,7 +429,7 @@ class _MemoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000000).withValues(alpha: 0.05),
+            color: const Color(0xFF000000).withOpacity(0.05),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -569,12 +479,10 @@ class _MemoCard extends StatelessWidget {
       ),
     );
 
-    final effectiveCard = GestureDetector(
+    return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: card,
     );
-
-    return effectiveCard;
   }
 }

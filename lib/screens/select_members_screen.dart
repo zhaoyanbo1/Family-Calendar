@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../themes/app_theme.dart';
 import 'family_screen.dart';
 
 class FamilyMember {
@@ -48,7 +49,7 @@ class SelectMembersScreen extends StatefulWidget {
 }
 
 class _SelectMembersScreenState extends State<SelectMembersScreen> {
-  static const _background = Colors.white;
+  static const _background = AppTheme.pageBackground;
   static const _card = Color(0xFFFFF9EC);
   static const _primaryColor = Color(0xFF0F172A);
   static const _labelColor = Color(0xFFB08F4C);
@@ -109,13 +110,18 @@ class _SelectMembersScreenState extends State<SelectMembersScreen> {
           .get();
 
       final members = <FamilyMember>[];
+
       for (final doc in snapshot.docs) {
         final memberData = doc.data();
         final userId =
-        (memberData['uid'] ?? memberData['userId'] ?? doc.id).toString().trim();
+        (memberData['uid'] ?? memberData['userId'] ?? doc.id)
+            .toString()
+            .trim();
+
         if (userId.isEmpty) continue;
 
         final userData = await _findUserByUid(userId);
+
         final name =
         (userData?['fullName'] ??
             userData?['name'] ??
@@ -126,10 +132,12 @@ class _SelectMembersScreenState extends State<SelectMembersScreen> {
             'Unknown Member')
             .toString()
             .trim();
+
         final role =
         (memberData['role'] ?? memberData['familyRole'] ?? 'member')
             .toString()
             .trim();
+
         final photoUrl =
         (userData?['photoURL'] ??
             userData?['photoUrl'] ??
@@ -190,6 +198,7 @@ class _SelectMembersScreenState extends State<SelectMembersScreen> {
               child: Container(
                 width: 430,
                 constraints: const BoxConstraints(maxWidth: 430),
+                color: _background,
                 child: Column(
                   children: [
                     _buildHeader(context),
@@ -250,43 +259,24 @@ class _SelectMembersScreenState extends State<SelectMembersScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      decoration: BoxDecoration(
+        color: AppTheme.headerBackground,
+        boxShadow: const [
+          AppTheme.headerShadow,
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 18,
-                  color: _primaryColor,
-                ),
-              ),
-            ),
-          ),
+          AppTheme.backButton(context),
           const Text(
             'Select Members',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: _primaryColor,
+              color: AppTheme.headline,
             ),
           ),
           const SizedBox(width: 40),
@@ -356,8 +346,11 @@ class _SelectMembersScreenState extends State<SelectMembersScreen> {
                   radius: 22,
                   backgroundColor: const Color(0xFFF4DFC0),
                   backgroundImage:
-                  member.imageUrl.isNotEmpty ? NetworkImage(member.imageUrl) : null,
-                  child: member.imageUrl.isEmpty
+                  member.imageUrl.isNotEmpty
+                      ? NetworkImage(member.imageUrl)
+                      : null,
+                  child:
+                  member.imageUrl.isEmpty
                       ? Text(
                     _memberInitials(member.name),
                     style: const TextStyle(
@@ -398,13 +391,16 @@ class _SelectMembersScreenState extends State<SelectMembersScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color:
-                    member.selected ? const Color(0xFFFDBA3C) : Colors.white,
+                    member.selected
+                        ? const Color(0xFFFDBA3C)
+                        : Colors.white,
                     border: Border.all(
                       color: const Color(0xFFE5E7EB),
                       width: 1.5,
                     ),
                   ),
-                  child: member.selected
+                  child:
+                  member.selected
                       ? const Icon(Icons.check, size: 16, color: Colors.white)
                       : null,
                 ),
@@ -422,7 +418,8 @@ class _SelectMembersScreenState extends State<SelectMembersScreen> {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => FamilyScreen(
+            builder:
+                (_) => FamilyScreen(
               familyId: widget.familyId,
               familyName: widget.familyName,
             ),

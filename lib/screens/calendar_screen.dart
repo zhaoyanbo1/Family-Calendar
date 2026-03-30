@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
+import '../widgets/bottom_navigation_bar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  static const bgColor = AppTheme.background;
+  static const bgColor = AppTheme.pageBackground;
   static const primaryColor = AppTheme.headline;
   static const accentColor = AppTheme.accent;
   static const secondaryAccent = AppTheme.secondaryAccent;
@@ -64,20 +65,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
             width: 430,
             constraints: const BoxConstraints(maxWidth: 430),
             height: double.infinity,
+            color: bgColor,
             child: Stack(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.25),
-                        blurRadius: 50,
-                        offset: const Offset(0, 20),
-                      ),
-                    ],
-                  ),
-                ),
                 Positioned.fill(
                   child: Column(
                     children: [
@@ -88,7 +78,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       ),
                       const SizedBox(height: 8),
                       Expanded(child: _buildTimeline(context)),
-                      const SizedBox(height: 94),
+                      const SizedBox.shrink(),
                     ],
                   ),
                 ),
@@ -100,14 +90,47 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 ),
                 Positioned(
                   right: 24,
-                  bottom: 112,
+                  bottom: 104,
                   child: _buildFab(context),
                 ),
                 Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: _buildBottomNav(context),
+                  child: AppBottomNavigationBar(
+                    currentIndex: _selectedNavIndex,
+                    onItemTapped: (index) {
+                      setState(() {
+                        _selectedNavIndex = index;
+                      });
+
+                      switch (index) {
+                        case 0:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const MemoScreen(),
+                            ),
+                          );
+                          break;
+                        case 1:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SelectFamilyScreen(),
+                            ),
+                          );
+                          break;
+                        case 2:
+                          break;
+                        case 3:
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
+                            ),
+                          );
+                          break;
+                      }
+                    },
+                  ),
                 ),
               ],
             ),
@@ -118,32 +141,29 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.45),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.headerBackground,
+        boxShadow: [
+          AppTheme.headerShadow,
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildHeaderAvatars(),
+          Text(
+            DateFormat('MMMM').format(_selectedDate),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: primaryColor,
+              letterSpacing: -0.5,
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildHeaderAvatars(),
-              Text(
-                DateFormat('MMMM').format(_selectedDate),
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  color: primaryColor,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(width: 40),//notification
-            ],
-          ),
-        ),
+          const SizedBox(width: 40),
+        ],
       ),
     );
   }
@@ -299,8 +319,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
               width: 70,
               padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
               decoration: BoxDecoration(
-                color:
-                selected ? const Color(0x22E2B736) : Colors.white.withOpacity(0.5),
+                color: selected
+                    ? const Color(0x22E2B736)
+                    : Colors.white.withOpacity(0.5),
                 border: Border.all(
                   color: selected ? accentColor : const Color(0xFFF1F5F9),
                   width: selected ? 2 : 1,
@@ -391,14 +412,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
             <_CalendarEvent>[];
 
         final selectedEvents = allEvents
-            .where((event) => _isSameDay(event.startTime, _selectedDate))
-            .toList()
+          ..where((event) => _isSameDay(event.startTime, _selectedDate))
+          ..toList();
+
+        final filteredEvents = allEvents
+          ..where((event) => _isSameDay(event.startTime, _selectedDate))
+          ..toList()
           ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
         return FutureBuilder<List<dynamic>>(
           future: Future.wait([
-            _loadParticipantNames(selectedEvents),
-            _loadParticipantAvatars(selectedEvents),
+            _loadParticipantNames(filteredEvents),
+            _loadParticipantAvatars(filteredEvents),
           ]),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -406,15 +431,17 @@ class _CalendarScreenState extends State<CalendarScreen> {
             }
 
             final participantNames =
-                (snapshot.data?[0] as Map<String, String>?) ?? <String, String>{};
+                (snapshot.data?[0] as Map<String, String>?) ??
+                    <String, String>{};
 
             final participantAvatars =
-                (snapshot.data?[1] as Map<String, String>?) ?? <String, String>{};
+                (snapshot.data?[1] as Map<String, String>?) ??
+                    <String, String>{};
 
             final int startHour;
             final int endHour;
 
-            if (selectedEvents.isEmpty) {
+            if (filteredEvents.isEmpty) {
               startHour = 0;
               endHour = 23;
             } else {
@@ -422,7 +449,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 0,
                 math.min(
                   23,
-                  selectedEvents.map((e) => e.startTime.hour).reduce(math.min) - 1,
+                  filteredEvents.map((e) => e.startTime.hour).reduce(math.min) -
+                      1,
                 ),
               );
 
@@ -430,8 +458,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 minHour + 1,
                 math.min(
                   23,
-                  selectedEvents
-                      .map((e) => e.endTime.hour + (e.endTime.minute > 0 ? 1 : 0))
+                  filteredEvents
+                      .map(
+                        (e) =>
+                    e.endTime.hour + (e.endTime.minute > 0 ? 1 : 0),
+                  )
                       .reduce(math.max),
                 ),
               );
@@ -439,10 +470,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
               startHour = 0;
               endHour = 24;
             }
-//------------------------------------------------------------
+
             final flowItems = _buildFlowItems(
               context,
-              selectedEvents,
+              filteredEvents,
               participantNames,
               startHour,
               endHour,
@@ -450,7 +481,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
             return SingleChildScrollView(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -459,28 +491,30 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: flowItems
-                            .map((item) => SizedBox(
-                          height: item.height,
-                          child: Align(
-                            alignment: item.alignment,
-                            child: item.leftLabel == null
-                                ? const SizedBox.shrink()
-                                : Padding(
-                              padding: EdgeInsets.only(
-                                top: item.leftTopPadding,
-                              ),
-                              child: Text(
-                                item.leftLabel!,
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  color: Color(0xFF94A3B8),
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                            .map(
+                              (item) => SizedBox(
+                            height: item.height,
+                            child: Align(
+                              alignment: item.alignment,
+                              child: item.leftLabel == null
+                                  ? const SizedBox.shrink()
+                                  : Padding(
+                                padding: EdgeInsets.only(
+                                  top: item.leftTopPadding,
+                                ),
+                                child: Text(
+                                  item.leftLabel!,
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ))
+                        )
                             .toList(),
                       ),
                     ),
@@ -497,7 +531,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 child: Align(
                                   alignment: item.alignment,
                                   child: Padding(
-                                    padding: EdgeInsets.only(top: item.lineTopPadding),
+                                    padding: EdgeInsets.only(
+                                      top: item.lineTopPadding,
+                                    ),
                                     child: Container(
                                       height: 2,
                                       color: const Color(0xFFF1F5F9),
@@ -512,7 +548,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                   bottom: item.eventBottomPadding,
                                 ),
                                 child: SizedBox(
-                                  height: item.height - item.eventTopPadding - item.eventBottomPadding,
+                                  height: item.height -
+                                      item.eventTopPadding -
+                                      item.eventBottomPadding,
                                   child: _buildEventCard(
                                     context,
                                     item.event!,
@@ -535,7 +573,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-//-----------
   Future<Map<String, String>> _loadParticipantAvatars(
       List<_CalendarEvent> events,
       ) async {
@@ -562,8 +599,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
     return result;
   }
-  //-------------
-
 
   List<_FlowItem> _buildFlowItems(
       BuildContext context,
@@ -584,9 +619,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
       );
 
-      final hourEvents = sortedEvents
-          .where((event) => event.startTime.hour == hour)
-          .toList();
+      final hourEvents =
+      sortedEvents.where((event) => event.startTime.hour == hour).toList();
 
       for (final event in hourEvents) {
         items.add(_FlowItem.event(event));
@@ -596,7 +630,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return items;
   }
 
-  _CalendarEvent? _nextEventAfter(List<_CalendarEvent> events, _CalendarEvent current) {
+  _CalendarEvent? _nextEventAfter(
+      List<_CalendarEvent> events,
+      _CalendarEvent current,
+      ) {
     final index = events.indexOf(current);
     if (index == -1 || index + 1 >= events.length) return null;
     return events[index + 1];
@@ -608,13 +645,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
       Map<String, String> participantNames,
       Map<String, String> participantAvatars,
       ) {
-    final participants = event.participantIds
-        .map((id) => participantNames[id] ?? 'Member')
-        .toList();
+    final participants =
+    event.participantIds.map((id) => participantNames[id] ?? 'Member').toList();
 
-    final avatarUrls = event.participantIds
-        .map((id) => participantAvatars[id] ?? '')
-        .toList();
+    final avatarUrls =
+    event.participantIds.map((id) => participantAvatars[id] ?? '').toList();
+
     debugPrint('avatarUrls: $avatarUrls');
 
     return EventCard(
@@ -820,80 +856,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
       ),
     );
   }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 17),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
-            border: const Border(
-              top: BorderSide(color: Color(0xFFF1F5F9)),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _bottomNavItem(Icons.chat_bubble_outline, 'Memo', 0, onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const MemoScreen()),
-                );
-              }),
-              _bottomNavItem(Icons.people, 'Family', 1, onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SelectFamilyScreen()),
-                );
-              }),
-              _bottomNavItem(Icons.calendar_today, 'Today', 2),
-              _bottomNavItem(Icons.settings, 'Settings', 3, onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                );
-              }),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _bottomNavItem(
-      IconData icon,
-      String label,
-      int index, {
-        VoidCallback? onTap,
-      }) {
-    final selected = index == _selectedNavIndex;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedNavIndex = index;
-        });
-        onTap?.call();
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: selected ? accentColor : const Color(0xFF94A3B8),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              color: selected ? accentColor : const Color(0xFF94A3B8),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 enum _FlowItemType { hourGap, minuteGap, event }
@@ -956,7 +918,7 @@ class _FlowItem {
   }
 
   factory _FlowItem.event(_CalendarEvent event) {
-    const double cardHeight = 170.0; // ✅ 固定高度
+    const double cardHeight = 170.0;
 
     return _FlowItem._(
       type: _FlowItemType.event,

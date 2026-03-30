@@ -37,7 +37,7 @@ class AppBottomNavigationBar extends StatelessWidget {
             vertical: AppTheme.verticalPadding,
           ),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white,
             border: const Border(
               top: BorderSide(color: AppTheme.divider),
             ),
@@ -46,7 +46,7 @@ class AppBottomNavigationBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(
               _navItems.length,
-              (index) => _buildNavItem(index),
+                  (index) => _buildNavItem(index),
             ),
           ),
         ),

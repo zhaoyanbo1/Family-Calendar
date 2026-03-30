@@ -1,17 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-
 import '../themes/app_theme.dart';
 
-/// 统一的顶部标题栏组件
-/// 支持居中标题、左侧内容、右侧内容等多种布局
 class AppHeader extends StatelessWidget {
   final String? title;
   final Widget? leading;
   final Widget? trailing;
   final double height;
-  final bool useBlur; // 是否使用模糊背景
+  final bool useBlur;
 
   const AppHeader({
     Key? key,
@@ -19,7 +16,7 @@ class AppHeader extends StatelessWidget {
     this.leading,
     this.trailing,
     this.height = AppTheme.headerHeight,
-    this.useBlur = true,
+    this.useBlur = false,
   }) : super(key: key);
 
   @override
@@ -31,14 +28,19 @@ class AppHeader extends StatelessWidget {
         vertical: AppTheme.verticalPadding,
       ),
       decoration: BoxDecoration(
-        color: useBlur ? Colors.white.withOpacity(0.8) : Colors.transparent,
+        color: useBlur
+            ? Colors.white.withOpacity(0.8)
+            : AppTheme.headerBackground,
         border: useBlur ? Border.all(color: AppTheme.divider) : null,
+        boxShadow: useBlur
+            ? null
+            : const [
+          AppTheme.headerShadow,
+        ],
       ),
       child: Row(
         children: [
-          // 左侧内容
           if (leading != null) leading!,
-          // 中间标题（如果没有leading或trailing，则居中）
           if (title != null)
             Expanded(
               child: Center(
@@ -48,24 +50,23 @@ class AppHeader extends StatelessWidget {
                 ),
               ),
             ),
-          // 右侧内容
           if (trailing != null) trailing!,
         ],
       ),
     );
 
-    if (useBlur) {
-      return ClipRect(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: AppTheme.blurSigma,
-            sigmaY: AppTheme.blurSigma,
-          ),
-          child: child,
-        ),
-      );
-    } else {
+    if (!useBlur) {
       return child;
     }
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: AppTheme.blurSigma,
+          sigmaY: AppTheme.blurSigma,
+        ),
+        child: child,
+      ),
+    );
   }
 }

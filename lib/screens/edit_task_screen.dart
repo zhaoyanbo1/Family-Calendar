@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../themes/app_theme.dart';
 import '../assets/figma_assets.dart';
 import '../models/task.dart';
 import 'family_selection_screen.dart';
@@ -25,7 +26,7 @@ class EditTaskScreen extends StatefulWidget {
 }
 
 class _EditTaskScreenState extends State<EditTaskScreen> {
-  static const _background = Color(0xFFFDFBF7);
+  static const _background = AppTheme.pageBackground;
   static const _card = Color(0xFFFAF6EB);
   static const _labelColor = Color(0xFFB08F4C);
   static const _primaryColor = Color(0xFF0F172A);
@@ -382,14 +383,15 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: _background,
       body: Container(
-        color: const Color(0xFFF1F5F9),
+        color: _background,
         child: SafeArea(
           child: Center(
             child: Container(
               width: 430,
               constraints: const BoxConstraints(maxWidth: 430),
+              color: _background,
               child: Column(
                 children: [
                   _buildHeader(context),
@@ -428,43 +430,24 @@ class _EditTaskScreenState extends State<EditTaskScreen> {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      decoration: const BoxDecoration(
+        color: AppTheme.headerBackground,
+        boxShadow: [
+          AppTheme.headerShadow,
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 18,
-                  color: _primaryColor,
-                ),
-              ),
-            ),
-          ),
+          AppTheme.backButton(context),
           const Text(
             'Edit Task',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: _primaryColor,
+              color: AppTheme.headline,
             ),
           ),
           const SizedBox(width: 44),

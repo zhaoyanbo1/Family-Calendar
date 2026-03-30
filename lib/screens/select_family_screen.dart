@@ -14,15 +14,24 @@ import 'memo_screen.dart';
 import 'settings_screen.dart';
 
 // Remote avatars (expires after ~7 days from Figma export)
-const _avatar1 = 'https://www.figma.com/api/mcp/asset/5dc71948-299e-4b3b-8f45-10afbf1a750a';
-const _avatar2 = 'https://www.figma.com/api/mcp/asset/06ff95bd-fcec-4f6d-b260-778a17cbf7ae';
-const _avatar3 = 'https://www.figma.com/api/mcp/asset/d1a3cb03-516d-4788-a974-afeeb6c81cc1';
-const _avatar4 = 'https://www.figma.com/api/mcp/asset/03802e4e-f495-4b7e-902a-f25d65096656';
-const _avatar5 = 'https://www.figma.com/api/mcp/asset/99a00811-045c-47fa-8c19-8bb31fe139a4';
-const _avatar6 = 'https://www.figma.com/api/mcp/asset/436113e7-c2dd-46a7-85f6-0bbfb0be1806';
-const _avatar7 = 'https://www.figma.com/api/mcp/asset/c4ac9b5a-eb93-4cfe-bde6-ac024476efbd';
-const _avatar8 = 'https://www.figma.com/api/mcp/asset/86824d61-0625-4c86-8c95-a942c59dab7b';
-const _avatar9 = 'https://www.figma.com/api/mcp/asset/63ffd1a8-2bd8-4239-a051-a79bafc20a76';
+const _avatar1 =
+    'https://www.figma.com/api/mcp/asset/5dc71948-299e-4b3b-8f45-10afbf1a750a';
+const _avatar2 =
+    'https://www.figma.com/api/mcp/asset/06ff95bd-fcec-4d-b260-778a17cbf7ae';
+const _avatar3 =
+    'https://www.figma.com/api/mcp/asset/d1a3cb03-516d-4788-a974-afeeb6c81cc1';
+const _avatar4 =
+    'https://www.figma.com/api/mcp/asset/03802e4e-f495-4b7e-902a-f25d65096656';
+const _avatar5 =
+    'https://www.figma.com/api/mcp/asset/99a00811-045c-47fa-8c19-8bb31fe139a4';
+const _avatar6 =
+    'https://www.figma.com/api/mcp/asset/436113e7-c2dd-46a7-85f6-0bbfb0be1806';
+const _avatar7 =
+    'https://www.figma.com/api/mcp/asset/c4ac9b5a-eb93-4cfe-bde6-ac024476efbd';
+const _avatar8 =
+    'https://www.figma.com/api/mcp/asset/86824d61-0625-4c86-8c95-a942c59dab7b';
+const _avatar9 =
+    'https://www.figma.com/api/mcp/asset/63ffd1a8-2bd8-4239-a051-a79bafc20a76';
 
 const List<String> _fallbackAvatars = [
   _avatar1,
@@ -35,6 +44,8 @@ const List<String> _fallbackAvatars = [
   _avatar8,
   _avatar9,
 ];
+
+const _cardBorder = Color.fromRGBO(236, 91, 19, 0.05);
 
 class SelectFamilyScreen extends StatefulWidget {
   const SelectFamilyScreen({Key? key}) : super(key: key);
@@ -64,17 +75,16 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
   Future<String?> _loadMemberAvatar(String memberId) async {
     final firestore = FirebaseFirestore.instance;
 
-    // Prefer user profile options first
     final userDoc = await firestore.collection('users').doc(memberId).get();
     if (userDoc.exists) {
       final userData = userDoc.data() ?? {};
-      final photoURL = (userData['photoURL'] ?? userData['avatar'] ?? '').toString().trim();
+      final photoURL =
+      (userData['photoURL'] ?? userData['avatar'] ?? '').toString().trim();
       if (photoURL.isNotEmpty) {
         return photoURL;
       }
     }
 
-    // Fallback to family member record if present
     final familyMemberDoc = await firestore
         .collection('users')
         .doc(memberId)
@@ -83,7 +93,8 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
         .get();
 
     if (familyMemberDoc.exists) {
-      final String photoURL = (familyMemberDoc.data()?['photoURL'] ?? '').toString().trim();
+      final String photoURL =
+      (familyMemberDoc.data()?['photoURL'] ?? '').toString().trim();
       if (photoURL.isNotEmpty) {
         return photoURL;
       }
@@ -118,14 +129,14 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
       final membershipData = membershipSnapshot.docs[i].data();
 
       final String familyId =
-          (membershipData['familyId'] ?? '').toString().trim();
+      (membershipData['familyId'] ?? '').toString().trim();
 
       if (familyId.isEmpty) {
         continue;
       }
 
       final familyDoc =
-          await firestore.collection('families').doc(familyId).get();
+      await firestore.collection('families').doc(familyId).get();
 
       if (!familyDoc.exists) {
         continue;
@@ -144,10 +155,10 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
       for (int j = 0; j < membersSnapshot.docs.length; j++) {
         final memberDoc = membersSnapshot.docs[j];
 
-        String? photoUrl = (memberDoc.data()['photoURL'] ?? '').toString().trim();
+        String? photoUrl =
+        (memberDoc.data()['photoURL'] ?? '').toString().trim();
 
         if (photoUrl.isEmpty) {
-          // try to fetch from user profile as fallback
           final loadedAvatar = await _loadMemberAvatar(memberDoc.id);
           photoUrl = loadedAvatar ?? '';
         }
@@ -174,8 +185,8 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
         _FamilyGroup(
           id: familyId,
           name: (familyData['familyName'] ??
-                  membershipData['familyName'] ??
-                  'Unnamed Family')
+              membershipData['familyName'] ??
+              'Unnamed Family')
               .toString(),
           memberCount: memberCount,
           avatars: avatars,
@@ -190,13 +201,14 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppTheme.pageBackground,
       body: SafeArea(
         child: Center(
           child: Container(
             width: 430,
             constraints: const BoxConstraints(maxWidth: 430),
             height: double.infinity,
+            color: AppTheme.pageBackground,
             child: Stack(
               children: [
                 Positioned.fill(
@@ -204,21 +216,34 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
                     children: [
                       const SizedBox(height: 77),
                       Expanded(child: _buildList()),
-                      const SizedBox(height: 242),
+                      const SizedBox(height: 156),
                     ],
                   ),
                 ),
-                Positioned(top: 0, left: 0, right: 0, child: AppHeader(title: 'Select Family')),
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: AppHeader(
+                    title: 'Select Family',
+                    useBlur: false,
+                  ),
+                ),
                 Positioned(
                   left: 24,
                   right: 24,
-                  bottom: 100,
+                  bottom: 94,
                   child: _buildCreateFamilyButton(),
                 ),
-                Positioned(left: 0, right: 0, bottom: 0, child: AppBottomNavigationBar(
-                  currentIndex: _selectedNavIndex,
-                  onItemTapped: _onNavItemTapped,
-                )),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: AppBottomNavigationBar(
+                    currentIndex: _selectedNavIndex,
+                    onItemTapped: _onNavItemTapped,
+                  ),
+                ),
               ],
             ),
           ),
@@ -293,7 +318,11 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
             child: const Column(
               children: [
                 SizedBox(height: 80),
-                Icon(Icons.groups_outlined, size: 44, color: AppTheme.inactiveIcon),
+                Icon(
+                  Icons.groups_outlined,
+                  size: 44,
+                  color: AppTheme.inactiveIcon,
+                ),
                 SizedBox(height: 12),
                 Text(
                   'No family found',
@@ -329,28 +358,28 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
               children: groups
                   .map(
                     (group) => Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
-                      child: _FamilyGroupCard(
-                        group: group,
-                        onTap: () {
-                          Navigator.of(context)
-                              .push(
-                                MaterialPageRoute(
-                                  builder: (_) => FamilyScreen(
-                                    familyId: group.id,
-                                    familyName: group.name,
-                                  ),
-                                ),
-                              )
-                              .then((result) {
-                            if (result == true) {
-                              _refreshFamilies();
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                  )
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: _FamilyGroupCard(
+                    group: group,
+                    onTap: () {
+                      Navigator.of(context)
+                          .push(
+                        MaterialPageRoute(
+                          builder: (_) => FamilyScreen(
+                            familyId: group.id,
+                            familyName: group.name,
+                          ),
+                        ),
+                      )
+                          .then((result) {
+                        if (result == true) {
+                          _refreshFamilies();
+                        }
+                      });
+                    },
+                  ),
+                ),
+              )
                   .toList(growable: false),
             ),
           ),
@@ -431,20 +460,19 @@ class _SelectFamilyScreenState extends State<SelectFamilyScreen> {
     });
 
     switch (index) {
-      case 0: // Memo
+      case 0:
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const MemoScreen()),
         );
         break;
-      case 1: // Family
-        // Already on this screen
+      case 1:
         break;
-      case 2: // Today
+      case 2:
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const CalendarScreen()),
         );
         break;
-      case 3: // Settings
+      case 3:
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const SettingsScreen()),
         );
@@ -483,15 +511,16 @@ class _FamilyGroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.all(25),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.4),
-          border: Border.all(color: AppTheme.border),
+          color: Colors.white,
+          border: Border.all(color: _cardBorder),
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: const Color(0xFF000000).withOpacity(0.05),
               blurRadius: 2,
               offset: const Offset(0, 1),
             ),
@@ -524,12 +553,11 @@ class _FamilyGroupCard extends StatelessWidget {
     for (var i = 0; i < avatars.length; i++) {
       children.add(
         Container(
-          margin: EdgeInsets.only(left: i == 0 ? 0 : 0),
           width: 32,
           height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.cardBackground, width: 2),
+            border: Border.all(color: Colors.white, width: 2),
           ),
           child: ClipOval(
             child: Image.network(
@@ -546,13 +574,12 @@ class _FamilyGroupCard extends StatelessWidget {
     if (group.extraCount > 0) {
       children.add(
         Container(
-          margin: const EdgeInsets.only(left: 0),
           width: 32,
           height: 32,
           decoration: BoxDecoration(
             color: AppTheme.accent.withOpacity(0.2),
             shape: BoxShape.circle,
-            border: Border.all(color: AppTheme.cardBackground, width: 2),
+            border: Border.all(color: Colors.white, width: 2),
           ),
           child: Center(
             child: Text(

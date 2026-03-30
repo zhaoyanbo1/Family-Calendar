@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
+import '../themes/app_theme.dart';
+
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
@@ -678,18 +680,9 @@ class _ChatListScreenState extends State<ChatListScreen>
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.arrow_back,
-                        size: 20,
-                        color: Colors.black54,
-                      ),
-                    ),
+                  child: AppTheme.backButton(
+                    context,
+                    onPressed: () => Navigator.of(context).maybePop(),
                   ),
                 ),
                 const Text(

@@ -9,6 +9,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../themes/app_theme.dart';
+import '../widgets/bottom_navigation_bar.dart';
 import 'calendar_screen.dart';
 import 'login_screen.dart';
 import 'voice_memo_screen.dart';
@@ -19,7 +21,7 @@ class SettingsScreen extends StatefulWidget {
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 
-  static const bgColor = Color(0xFFF8F7F6);
+  static const bgColor = AppTheme.pageBackground;
   static const primaryColor = Color(0xFF0F172A);
   static const accentColor = Color(0xFFE2B736);
 }
@@ -198,6 +200,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         _buildProfileSection(),
                         _buildSettingsList(),
                         _buildLogOutButton(context),
+                        const SizedBox(height: 96),
                       ],
                     ),
                   ),
@@ -208,7 +211,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: _buildBottomNav(context),
+              child: AppBottomNavigationBar(
+                currentIndex: 3,
+                onItemTapped: (index) {
+                  switch (index) {
+                    case 0:
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MemoScreen()),
+                      );
+                      break;
+                    case 1:
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const SelectFamilyScreen(),
+                        ),
+                      );
+                      break;
+                    case 2:
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const CalendarScreen(),
+                        ),
+                      );
+                      break;
+                    case 3:
+                      break;
+                  }
+                },
+              ),
             ),
           ],
         ),
@@ -220,31 +250,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDFAF2).withOpacity(0.9),
+        color: AppTheme.headerBackground,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-          ),
+          AppTheme.headerShadow,
         ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF3EEE0),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(Icons.arrow_back, size: 20, color: Colors.black54),
-              ),
-            ),
-          ),
+          AppTheme.backButton(context),
           const Text(
             'Settings',
             style: TextStyle(
@@ -391,15 +405,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _buildSettingItem('Account Details', Icons.person),
-                Divider(
-                  color: const Color(0xFFF1F5F9),
+                const Divider(
+                  color: Color(0xFFF1F5F9),
                   height: 1,
                   indent: 56,
                   endIndent: 20,
                 ),
                 _buildSettingItem('Notifications', Icons.notifications),
-                Divider(
-                  color: const Color(0xFFF1F5F9),
+                const Divider(
+                  color: Color(0xFFF1F5F9),
                   height: 1,
                   indent: 56,
                   endIndent: 20,
@@ -431,9 +445,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Row(
+          child: const Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(
                 Icons.logout,
                 size: 18,
@@ -490,96 +504,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Icons.arrow_forward_ios,
             size: 12,
             color: Color(0xFF64748B),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(25, 16, 25, 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.8),
-        border: const Border(
-          top: BorderSide(color: Color(0xFFF1F5F9)),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _navItem(
-            context,
-            Icons.chat_bubble_outline,
-            'Memo',
-            selected: false,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const MemoScreen()),
-              );
-            },
-          ),
-          _navItem(
-            context,
-            Icons.people,
-            'Family',
-            selected: false,
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SelectFamilyScreen()),
-            ),
-          ),
-          _navItem(
-            context,
-            Icons.calendar_today,
-            'Today',
-            selected: false,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CalendarScreen()),
-              );
-            },
-          ),
-          _navItem(
-            context,
-            Icons.settings,
-            'Settings',
-            selected: true,
-            onTap: null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _navItem(
-      BuildContext context,
-      IconData icon,
-      String label, {
-        bool selected = false,
-        VoidCallback? onTap,
-      }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: selected
-                ? SettingsScreen.accentColor
-                : const Color(0xFF94A3B8),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              color: selected
-                  ? SettingsScreen.accentColor
-                  : const Color(0xFF94A3B8),
-            ),
           ),
         ],
       ),
