@@ -329,6 +329,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
         'title': memoTitle,
         'body': memoBody,
         'timezone': DateTime.now().timeZoneName,
+        'currentDateISO': _currentDateISO(),
       });
 
       final data = Map<String, dynamic>.from(result.data as Map);
@@ -374,6 +375,14 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
       default:
         return error.message ?? 'AI analysis failed. Please try again.';
     }
+  }
+
+  String _currentDateISO() {
+    final now = DateTime.now();
+    final year = now.year.toString().padLeft(4, '0');
+    final month = now.month.toString().padLeft(2, '0');
+    final day = now.day.toString().padLeft(2, '0');
+    return '$year-$month-$day';
   }
 
   Future<void> _toggleListening() async {
