@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Calendar',
+        title: 'Login',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppTheme.accent),
         scaffoldBackgroundColor: AppTheme.pageBackground,
