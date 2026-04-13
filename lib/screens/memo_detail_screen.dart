@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../themes/app_theme.dart';
@@ -29,6 +30,7 @@ class MemoDetailScreen extends StatefulWidget {
 
 class _MemoDetailScreenState extends State<MemoDetailScreen>
     with SingleTickerProviderStateMixin {
+  static const int _maxTitleLength = 20;
   static const _background = AppTheme.pageBackground;
   static const _primaryColor = Color(0xFF0F172A);
   static const _accentColor = Color(0xFFFAC638);
@@ -142,6 +144,11 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
 
     if (title.isEmpty && body.isEmpty) {
       _showMessage('Please enter your memo first.');
+      return null;
+    }
+
+    if (title.length > _maxTitleLength) {
+      _showMessage('Memo title cannot exceed $_maxTitleLength characters.');
       return null;
     }
 
@@ -313,6 +320,11 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
 
     if (memoTitle.isEmpty && memoBody.isEmpty) {
       _showMessage('This memo is empty.');
+      return;
+    }
+
+    if (memoBody.isEmpty) {
+      _showMessage('Detail cannot be empty.');
       return;
     }
 
@@ -735,11 +747,14 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
           controller: _titleController,
           focusNode: _titleFocusNode,
           maxLines: 2,
+          maxLength: _maxTitleLength,
+          inputFormatters: [LengthLimitingTextInputFormatter(_maxTitleLength)],
           textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: 'Memo title',
             border: InputBorder.none,
             isCollapsed: true,
+            counterText: '',
           ),
           style: const TextStyle(
             fontSize: 20,
