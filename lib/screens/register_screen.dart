@@ -162,122 +162,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 440),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    _buildLogoHeader(),
-                    const SizedBox(height: 24),
-                    _buildRegisterCard(),
-                  ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 24,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildLogoHeader(),
+                          const SizedBox(height: 24),
+                          _buildRegisterCard(),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
   }
 
-  // Widget _buildLogoHeader() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.center,
-  //     children: [
-  //       Container(
-  //         width: 92,
-  //         height: 92,
-  //         decoration: BoxDecoration(
-  //           gradient: RadialGradient(
-  //             colors: [
-  //               accentColor.withOpacity(0.22),
-  //               Colors.white.withOpacity(0.0),
-  //             ],
-  //             radius: 0.8,
-  //           ),
-  //           border: Border.all(
-  //             color: accentColor.withOpacity(0.2),
-  //             width: 1.2,
-  //           ),
-  //           borderRadius: BorderRadius.circular(100),
-  //           boxShadow: [
-  //             BoxShadow(
-  //               color: accentColor.withOpacity(0.12),
-  //               blurRadius: 20,
-  //               offset: const Offset(0, 8),
-  //             ),
-  //           ],
-  //         ),
-  //         child: const Center(
-  //           child: Icon(
-  //             Icons.location_on,
-  //             size: 42,
-  //             color: accentColor,
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(height: 16),
-  //       const Text(
-  //         'Cottage',
-  //         style: TextStyle(
-  //           fontSize: 30,
-  //           fontWeight: FontWeight.bold,
-  //           color: primaryColor,
-  //           letterSpacing: -0.75,
-  //           fontFamily: 'Plus Jakarta Sans',
-  //         ),
-  //       ),
-  //       const SizedBox(height: 8),
-  //       Text(
-  //         'Your family\'s shared space',
-  //         style: TextStyle(
-  //           fontSize: 14,
-  //           fontWeight: FontWeight.w500,
-  //           color: Color(0xFF7E7664),
-  //           fontFamily: 'Plus Jakarta Sans',
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
   Widget _buildLogoHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.2),
-            border: Border.all(color: accentColor.withOpacity(0.1), width: 1),
-            borderRadius: BorderRadius.circular(100),
-          ),
-          child: const Center(
-            child: Icon(Icons.location_on, size: 40, color: accentColor),
-          ),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Cottage',
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            color: primaryColor,
-            letterSpacing: -0.75,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Your family\'s shared space',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFF7E7664),
-          ),
+        Image.asset(
+          'assets/images/family_memo_logo.png',
+          width: 220,
+          height: 220,
+          fit: BoxFit.contain,
         ),
       ],
     );
@@ -336,7 +262,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             border: Border.all(color: fieldBorderColor, width: 1),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             child: TextField(
               controller: fullNameController,
               textInputAction: TextInputAction.next,
@@ -373,7 +299,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             border: Border.all(color: fieldBorderColor, width: 1),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             child: TextField(
               controller: emailController,
               keyboardType: TextInputType.emailAddress,
@@ -412,7 +338,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             border: Border.all(color: fieldBorderColor, width: 1),
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             child: TextField(
               controller: passwordController,
               obscureText: true,
