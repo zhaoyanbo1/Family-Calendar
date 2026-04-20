@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,8 +36,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
   static const _background = AppTheme.pageBackground;
   static const _primaryColor = Color(0xFF0F172A);
   static const _accentColor = Color(0xFFFAC638);
-  static const _accentColorNew = Color(0xFFE2B736);
-  static const _editingColor = Color(0xFF9A6B00);
   static const _cardBorder = Color.fromRGBO(250, 198, 56, 0.05);
   static const _bodyText = Color(0xFF334155);
   static const _titleStyle = TextStyle(
@@ -59,7 +58,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
   late final FocusNode _titleFocusNode;
   late final FocusNode _bodyFocusNode;
   late final ScrollController _bodyScrollController;
-  late final ScrollController _readOnlyBodyScrollController;
   final stt.SpeechToText _speech = stt.SpeechToText();
   late final AnimationController _voiceBarsController;
 
@@ -67,8 +65,8 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
   late String _originalBody;
   late bool _isCreatingMode;
   late String _currentMemoId;
+  Timer? _autosaveTimer;
   bool _isSaving = false;
-  bool _isEditing = false;
   bool _isAnalyzingTask = false;
   bool _speechReady = false;
   bool _isListening = false;
@@ -89,7 +87,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
     _originalBody = widget.body;
     _isCreatingMode = widget.isCreating;
     _currentMemoId = widget.memoId;
-    _isEditing = widget.isCreating;
     _titleController = TextEditingController(text: widget.title)
       ..addListener(_handleFieldChanged);
     _bodyController = TextEditingController(text: widget.body)
@@ -97,7 +94,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
     _titleFocusNode = FocusNode()..addListener(_handleFocusChange);
     _bodyFocusNode = FocusNode()..addListener(_handleFocusChange);
     _bodyScrollController = ScrollController();
-    _readOnlyBodyScrollController = ScrollController();
     _voiceBarsController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -106,18 +102,20 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
   }
 
   void _handleFieldChanged() {
-    if (!mounted || !_isEditing) {
+    if (!mounted) {
       return;
     }
+    _scheduleAutosave();
     setState(() {});
   }
 
   void _handleBodyChanged() {
-    if (!mounted || !_isEditing) {
+    if (!mounted) {
       return;
     }
 
     _scheduleBodyScrollToLatest();
+    _scheduleAutosave();
     setState(() {});
   }
 
@@ -223,8 +221,8 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
   }
 
   Future<_SavedMemo?> _saveMemo({
-    bool popAfterCreate = true,
-    bool showSuccessMessage = true,
+    bool popAfterCreate = false,
+    bool showSuccessMessage = false,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     final title = _titleController.text.trim();
@@ -284,7 +282,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
 
         setState(() {
           _isCreatingMode = false;
-          _isEditing = false;
         });
 
         if (popAfterCreate) {
@@ -328,10 +325,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
         );
       }
 
-      setState(() {
-        _isEditing = false;
-      });
-
       if (showSuccessMessage) {
         _showMessage('Memo updated.');
       }
@@ -353,38 +346,53 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
     }
   }
 
-  void _startEditing() {
-    _bodyController.selection = TextSelection.collapsed(
-      offset: _bodyController.text.length,
-    );
-    setState(() {
-      _isEditing = true;
-    });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      _bodyFocusNode.requestFocus();
-      _scheduleBodyScrollToLatest(force: true);
-      Future<void>.delayed(const Duration(milliseconds: 260), () {
-        if (!mounted) {
-          return;
-        }
-        _scheduleBodyScrollToLatest(force: true);
-      });
+  void _scheduleAutosave() {
+    _autosaveTimer?.cancel();
+
+    if (_isSaving || _isAnalyzingTask) {
+      return;
+    }
+
+    if (!_hasChanges || !_hasSavableContent) {
+      return;
+    }
+
+    _autosaveTimer = Timer(const Duration(milliseconds: 700), () {
+      _flushAutosave();
     });
   }
 
-  void _cancelEditing() {
-    _voiceSessionId++;
-    _speech.cancel();
-    _resetVoiceUiState();
-    FocusScope.of(context).unfocus();
-    _titleController.text = _originalTitle;
-    _bodyController.text = _originalBody;
-    setState(() {
-      _isEditing = false;
-    });
+  bool get _hasSavableContent {
+    return _titleController.text.trim().isNotEmpty ||
+        _bodyController.text.trim().isNotEmpty;
+  }
+
+  Future<void> _flushAutosave() async {
+    _autosaveTimer?.cancel();
+    _autosaveTimer = null;
+
+    if (_isSaving || _isAnalyzingTask || !_hasChanges || !_hasSavableContent) {
+      return;
+    }
+
+    await _saveMemo(popAfterCreate: false, showSuccessMessage: false);
+  }
+
+  void _dismissKeyboard() {
+    final currentFocus = FocusScope.of(context);
+    if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+      currentFocus.unfocus();
+    }
+  }
+
+  Future<void> _handleBackNavigation() async {
+    _dismissKeyboard();
+    await _stopVoiceInputForNavigation();
+    await _flushAutosave();
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop();
   }
 
   String _fallbackTitle(String body) {
@@ -416,7 +424,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
       return;
     }
 
-    final savedMemo = (_isCreatingMode || (_isEditing && _hasChanges))
+    final savedMemo = (_isCreatingMode || _hasChanges)
         ? await _saveMemo(popAfterCreate: false, showSuccessMessage: false)
         : _SavedMemo(
             memoId: _currentMemoId,
@@ -516,10 +524,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
       return;
     }
 
-    if (!_isEditing) {
-      _startEditing();
-    }
-
     if (_isSpeechActive) {
       await _stopListening();
       return;
@@ -535,7 +539,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
       return;
     }
 
-    const target = 'body';
+    final target = _titleFocusNode.hasFocus ? 'title' : 'body';
 
     _titleFocusNode.unfocus();
     _bodyFocusNode.unfocus();
@@ -706,6 +710,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     _voiceBarsController.dispose();
     _speech.cancel();
     _titleFocusNode
@@ -715,7 +720,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
       ..removeListener(_handleFocusChange)
       ..dispose();
     _bodyScrollController.dispose();
-    _readOnlyBodyScrollController.dispose();
     _titleController
       ..removeListener(_handleFieldChanged)
       ..dispose();
@@ -729,65 +733,71 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
   Widget build(BuildContext context) {
     final statusBarHeight = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      backgroundColor: _background,
-      resizeToAvoidBottomInset: false,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: statusBarHeight,
-            child: const ColoredBox(color: AppTheme.headerBackground),
-          ),
-          SafeArea(
-            child: Center(
-              child: Container(
-                width: 430,
-                constraints: const BoxConstraints(maxWidth: 430),
-                height: double.infinity,
-                color: _background,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 89),
-                          Expanded(child: _buildContent(context)),
-                        ],
-                      ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) {
+          return;
+        }
+        await _handleBackNavigation();
+      },
+      child: GestureDetector(
+        onTap: _dismissKeyboard,
+        behavior: HitTestBehavior.translucent,
+        child: Scaffold(
+          backgroundColor: _background,
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: statusBarHeight,
+                child: const ColoredBox(color: AppTheme.headerBackground),
+              ),
+              SafeArea(
+                child: Center(
+                  child: Container(
+                    width: 430,
+                    constraints: const BoxConstraints(maxWidth: 430),
+                    height: double.infinity,
+                    color: _background,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Column(
+                            children: [
+                              const SizedBox(height: 89),
+                              Expanded(child: _buildContent(context)),
+                            ],
+                          ),
+                        ),
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: _buildAppBar(context),
+                        ),
+                        Positioned(
+                          left: 24,
+                          right: 24,
+                          bottom: 20,
+                          child: _buildBottomActions(context),
+                        ),
+                      ],
                     ),
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: _buildAppBar(context),
-                    ),
-                    Positioned(
-                      left: 24,
-                      right: 24,
-                      bottom: 20,
-                      child: _buildBottomActions(context),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildAppBar(BuildContext context) {
-    final actionLabel = _isCreatingMode
-        ? 'Save'
-        : _isEditing
-        ? (_hasChanges ? 'Save' : 'Cancel')
-        : 'Edit';
-    final actionVisuals = _resolveActionVisuals();
-
     return Container(
       height: 89,
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -798,16 +808,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          AppTheme.backButton(
-            context,
-            onPressed: () {
-              if (_isEditing && !_isCreatingMode) {
-                _cancelEditing();
-                return;
-              }
-              Navigator.of(context).pop();
-            },
-          ),
+          AppTheme.backButton(context, onPressed: _handleBackNavigation),
           Expanded(
             child: Center(
               child: Text(
@@ -821,57 +822,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
               ),
             ),
           ),
-          InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: _isSaving
-                ? null
-                : () {
-                    if (_isCreatingMode) {
-                      _saveMemo();
-                      return;
-                    }
-
-                    if (!_isEditing) {
-                      _startEditing();
-                      return;
-                    }
-
-                    if (_hasChanges) {
-                      _saveMemo();
-                      return;
-                    }
-
-                    _cancelEditing();
-                  },
-            child: Container(
-              padding: actionVisuals.padding,
-              decoration: BoxDecoration(
-                color: actionVisuals.backgroundColor,
-                borderRadius: BorderRadius.circular(actionVisuals.borderRadius),
-                border: actionVisuals.borderColor == null
-                    ? null
-                    : Border.all(color: actionVisuals.borderColor!),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: _accentColor,
-                      ),
-                    )
-                  : Text(
-                      actionLabel,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: actionVisuals.textColor,
-                        letterSpacing: 0.35,
-                      ),
-                    ),
-            ),
-          ),
+          _buildAddTaskAction(),
         ],
       ),
     );
@@ -888,7 +839,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
         );
 
         return SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: EdgeInsets.fromLTRB(
             24,
             0,
@@ -915,17 +866,11 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
                 padding: const EdgeInsets.fromLTRB(25, 21, 25, 25),
                 child: LayoutBuilder(
                   builder: (context, cardConstraints) {
-                    return _isEditing
-                        ? _buildEditableBody(
-                            context,
-                            maxBodyHeight: viewportConfig.maxBodyHeight,
-                            contentWidth: cardConstraints.maxWidth,
-                          )
-                        : _buildReadOnlyBody(
-                            context,
-                            maxBodyHeight: viewportConfig.maxBodyHeight,
-                            contentWidth: cardConstraints.maxWidth,
-                          );
+                    return _buildEditableBody(
+                      context,
+                      maxBodyHeight: viewportConfig.maxBodyHeight,
+                      contentWidth: cardConstraints.maxWidth,
+                    );
                   },
                 ),
               ),
@@ -955,7 +900,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
   }
 
   double _bottomActionsReservedHeight() {
-    return (_isListening || _isVoiceTransitioning) ? 244 : 188;
+    return (_isListening || _isVoiceTransitioning) ? 208 : 132;
   }
 
   double _resolveDetailBodyHeight(
@@ -1009,6 +954,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
           maxLength: _maxTitleLength,
           inputFormatters: [LengthLimitingTextInputFormatter(_maxTitleLength)],
           textInputAction: TextInputAction.next,
+          onTapOutside: (_) => _dismissKeyboard(),
           decoration: InputDecoration(
             hintText: 'Memo title',
             border: InputBorder.none,
@@ -1036,6 +982,7 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
+              onTapOutside: (_) => _dismissKeyboard(),
               scrollPadding: EdgeInsets.only(
                 bottom: math.max(
                   32,
@@ -1055,43 +1002,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
     );
   }
 
-  Widget _buildReadOnlyBody(
-    BuildContext context, {
-    required double maxBodyHeight,
-    required double contentWidth,
-  }) {
-    final bodyHeight = _resolveDetailBodyHeight(
-      context,
-      text: _originalBody,
-      placeholder: ' ',
-      maxBodyHeight: maxBodyHeight,
-      contentWidth: contentWidth,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(_originalTitle, style: _titleStyle),
-        const SizedBox(height: 16),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
-          height: bodyHeight,
-          child: Scrollbar(
-            controller: _readOnlyBodyScrollController,
-            thumbVisibility: _originalBody.trim().isNotEmpty,
-            radius: const Radius.circular(999),
-            child: SingleChildScrollView(
-              controller: _readOnlyBodyScrollController,
-              padding: const EdgeInsets.only(right: 6),
-              child: Text(_originalBody, style: _bodyStyle),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildBottomActions(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1100,52 +1010,49 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
           _buildListeningBanner(),
           const SizedBox(height: 12),
         ],
-        _buildAddTaskButton(context),
-        const SizedBox(height: 14),
         _buildVoiceInputButton(),
       ],
     );
   }
 
-  Widget _buildAddTaskButton(BuildContext context) {
-    return GestureDetector(
-      onTap: _isAnalyzingTask || _isSaving ? null : _analyzeMemoAndOpenTask,
-      child: Opacity(
-        opacity: (_isAnalyzingTask || _isSaving) ? 0.7 : 1,
-        child: Container(
-          height: 52,
+  Widget _buildAddTaskAction() {
+    final isDisabled = _isAnalyzingTask || _isSaving;
+
+    return Opacity(
+      opacity: isDisabled ? 0.72 : 1,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: isDisabled ? null : _analyzeMemoAndOpenTask,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFAC638), Color(0xFFF59E0B)],
-            ),
-            borderRadius: BorderRadius.circular(24),
+            color: _accentColor.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: const Color(0xFFFFE3A3)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFAC638).withValues(alpha: 0.2),
-                blurRadius: 15,
+                color: _accentColor.withValues(alpha: 0.1),
+                blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
           child: Center(
-            child: _isAnalyzingTask
+            child: _isAnalyzingTask || _isSaving
                 ? const SizedBox(
-                    width: 22,
-                    height: 22,
+                    width: 16,
+                    height: 16,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 2,
+                      color: _accentColor,
                     ),
                   )
-                : Text(
-                    _isCreatingMode ? 'Save & Add Task' : 'Add Task',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black,
-                    ),
+                : const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Color(0xFF9A6B00),
+                    size: 20,
                   ),
           ),
         ),
@@ -1282,25 +1189,6 @@ class _MemoDetailScreenState extends State<MemoDetailScreen>
       ),
     );
   }
-
-  _ActionVisuals _resolveActionVisuals() {
-    if (_isEditing && !_hasChanges && !_isCreatingMode) {
-      return _ActionVisuals(
-        backgroundColor: const Color(0xFFFFF4D6),
-        textColor: _editingColor,
-        borderColor: const Color(0xFFFFE3A3),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        borderRadius: 16,
-      );
-    }
-
-    return _ActionVisuals(
-      backgroundColor: _accentColor.withValues(alpha: 0.1),
-      textColor: _accentColorNew,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      borderRadius: 999,
-    );
-  }
 }
 
 class _SavedMemo {
@@ -1323,22 +1211,6 @@ class _DetailViewportConfig {
 
   final double maxBodyHeight;
   final double scrollBottomPadding;
-}
-
-class _ActionVisuals {
-  const _ActionVisuals({
-    required this.backgroundColor,
-    required this.textColor,
-    required this.padding,
-    required this.borderRadius,
-    this.borderColor,
-  });
-
-  final Color backgroundColor;
-  final Color textColor;
-  final EdgeInsets padding;
-  final double borderRadius;
-  final Color? borderColor;
 }
 
 class _VoiceBars extends StatelessWidget {
