@@ -39,6 +39,7 @@ class _MemoScreenState extends State<MemoScreen>
   final stt.SpeechToText _speech = stt.SpeechToText();
   late final AnimationController _voiceBarsController;
   late final ValueNotifier<_VoiceUiState> _voiceUi;
+  Timer? _voiceReleaseFallbackTimer;
   bool _speechReady = false;
   bool? _pendingVoiceCancel;
   int _voiceSessionId = 0;
@@ -67,6 +68,7 @@ class _MemoScreenState extends State<MemoScreen>
 
   @override
   void dispose() {
+    _voiceReleaseFallbackTimer?.cancel();
     _voiceUi.dispose();
     _voiceBarsController.dispose();
     _speech.cancel();
@@ -135,6 +137,8 @@ class _MemoScreenState extends State<MemoScreen>
   }
 
   void _resetVoiceOverlay({required bool clearText}) {
+    _voiceReleaseFallbackTimer?.cancel();
+    _voiceReleaseFallbackTimer = null;
     _updateVoiceUi(
       (current) => current.copyWith(
         isListening: false,
@@ -185,15 +189,41 @@ class _MemoScreenState extends State<MemoScreen>
   }
 
   void _maybeCompleteReleasedVoiceSession() {
+    _maybeCompleteReleasedVoiceSessionInternal();
+  }
+
+  void _maybeCompleteReleasedVoiceSessionInternal({bool force = false}) {
     final cancel = _pendingVoiceCancel;
     if (cancel == null ||
         _isVoiceHoldActive ||
-        _speech.isListening ||
-        _isListening) {
+        (!force && (_speech.isListening || _isListening))) {
       return;
     }
 
     _completeReleasedVoiceSession(cancel: cancel);
+  }
+
+  void _scheduleVoiceReleaseFallback(int releaseSessionId) {
+    _voiceReleaseFallbackTimer?.cancel();
+    _voiceReleaseFallbackTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted || releaseSessionId != _voiceSessionId) {
+        return;
+      }
+
+      if (_pendingVoiceCancel == null || _isVoiceHoldActive) {
+        return;
+      }
+
+      _updateVoiceUi(
+        (current) => current.copyWith(
+          isListening: false,
+          isVoiceTransitioning: false,
+          soundLevel: 0,
+        ),
+      );
+      _stopVoiceBars();
+      _maybeCompleteReleasedVoiceSessionInternal(force: true);
+    });
   }
 
   void _completeReleasedVoiceSession({required bool cancel}) {
@@ -233,6 +263,8 @@ class _MemoScreenState extends State<MemoScreen>
     }
 
     final sessionId = ++_voiceSessionId;
+    _voiceReleaseFallbackTimer?.cancel();
+    _voiceReleaseFallbackTimer = null;
     _pendingVoiceCancel = null;
     _voiceDraftText = '';
     _updateVoiceUi(
@@ -326,6 +358,10 @@ class _MemoScreenState extends State<MemoScreen>
       if (!cancel) {
         _showMessage('Voice input stopped unexpectedly. Please try again.');
       }
+    } finally {
+      if (releaseSessionId == _voiceSessionId && _pendingVoiceCancel != null) {
+        _scheduleVoiceReleaseFallback(releaseSessionId);
+      }
     }
   }
 
@@ -345,6 +381,8 @@ class _MemoScreenState extends State<MemoScreen>
 
     if (status == stt.SpeechToText.doneStatus ||
         status == stt.SpeechToText.notListeningStatus) {
+      _voiceReleaseFallbackTimer?.cancel();
+      _voiceReleaseFallbackTimer = null;
       _updateVoiceUi(
         (current) => current.copyWith(isListening: false, soundLevel: 0),
       );
@@ -360,6 +398,8 @@ class _MemoScreenState extends State<MemoScreen>
 
     final wasUserCanceled = _pendingVoiceCancel == true;
     _voiceSessionId++;
+    _voiceReleaseFallbackTimer?.cancel();
+    _voiceReleaseFallbackTimer = null;
     if (wasUserCanceled) {
       _resetVoiceOverlay(clearText: true);
       return;
